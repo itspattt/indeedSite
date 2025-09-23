@@ -7,5 +7,6 @@ class Job(models.Model):
     name = models.CharField(max_length=255)
     salary = models.IntegerField()
     description = models.TextField()
+    logo = models.ImageField(upload_to='job_images/', blank=True, null=True)
     def __str__(self):
         return str(self.id) + ' - ' + self.name
