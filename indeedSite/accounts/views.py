@@ -7,10 +7,6 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
 
 # Create your views here.
-def index(request):
-    template_data = {}
-    return render(request, "accounts/profile.html", {'template_data': template_data})
-
 def signup(request):
     template_data = {}
     template_data['title'] = 'Sign Up'
