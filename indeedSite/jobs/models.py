@@ -26,5 +26,9 @@ class Profile(models.Model):
 
     show_email = models.BooleanField(default=False)
     show_phone = models.BooleanField(default=False)
+
+    # Role
+    is_Recruiter = models.BooleanField(default=False)
+    
     def __str__(self):
         return f"{self.user.username}'s Profile"

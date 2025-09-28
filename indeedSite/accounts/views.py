@@ -21,12 +21,12 @@ def signup(request):
             user = form.save()
             profile = Profile()
             profile.user = user
+            profile.is_Recruiter = form.cleaned_data['is_Recruiter']
             profile.save()
             return redirect('home.index')
         else:
             template_data['form'] = form
-            return render(request, 'accounts/signup.html',
-                {'template_data': template_data})
+            return render(request, 'accounts/signup.html', {'template_data': template_data})
         
 def login(request):
     template_data = {}

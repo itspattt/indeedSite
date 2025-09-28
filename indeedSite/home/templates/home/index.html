@@ -5,17 +5,20 @@
 </head>
 <body>
   <h1>Welcome to the Home Page</h1>
-  <a class="btn btn-primary" href="{%url 'jobs.index'%}">Job Posts</a>
-  <a class="btn btn-primary" href="{%url 'home.index'%}">About</a>
-  <a class="btn btn-primary" href="{%url 'accounts.login'%}">Login</a>
-  {% if user.is_authenticated %}
-    <a class="btn btn-primary" href="{%url 'profile.index' request.user.id%}">Your Profile</a>
-    <a class="btn btn-primary" href="{%url 'accounts.logout'%}">Logout {{user.username}}</a>
-  {% else %}
-    <a class="btn btn-primary" href="{%url 'accounts.signup'%}">Sign Up</a>
-  {% endif %}
-  {% for user in template_data.users %}
-    <a class="btn btn-primary" href="{%url 'profile.index' user.id%}">{{user.username}}'s Profile</a>
-  {% endfor %}
+  <div class="container">
+    <a class="btn btn-primary" style="display:block;" href="{%url 'jobs.index'%}">Job Posts</a>
+    <a class="btn btn-primary"  style="display:block;" href="{%url 'home.index' %}">About</a>
+    <a class="btn btn-primary"  style="display:block;" href="{%url 'accounts.login'%}">Login</a>
+    {% if user.is_authenticated %}
+      <a class="btn btn-primary"  style="display:block;" href="{%url 'profile.index' request.user.id%}">Your Profile</a>
+      <a class="btn btn-primary"  style="display:block;" href="{%url 'accounts.logout'%}">Logout {{user.username}}</a>
+    {% else %}
+      <a class="btn btn-primary"  style="display:block;" href="{%url 'accounts.signup'%}">Sign Up</a>
+    {% endif %}
+    <h2>View Profiles</h2>
+    {% for user in template_data.users %}
+      <a class="btn btn-primary"  style="display:block;" href="{%url 'profile.index' user.id%}">{{user.username}}</a>
+    {% endfor %}
+  </div>
 </body>
 </html>
