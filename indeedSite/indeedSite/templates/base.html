@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}GT CareerConnect{% endblock %}</title>
+  
+  <!-- Bootstrap CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <!-- Custom CSS -->
+  <link rel="stylesheet" href="{% load static %}{% static 'css/style.css' %}">
+  <!-- Font Awesome -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  
+  {% block extra_css %}{% endblock %}
+</head>
+<body>
+  <!-- Navigation -->
+  <nav class="navbar navbar-expand-lg navbar-dark">
+    <div class="container">
+      <a class="navbar-brand" href="{%url 'home.index'%}">
+        <i class="fas fa-graduation-cap me-2"></i>GT CareerConnect
+      </a>
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <div class="collapse navbar-collapse" id="navbarNav">
+        <ul class="navbar-nav ms-auto">
+          <li class="nav-item">
+            <a class="nav-link {% if request.resolver_match.url_name == 'job_list' %}active{% endif %}" href="{%url 'job_list'%}">
+              <i class="fas fa-briefcase me-1"></i>Jobs
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link {% if request.resolver_match.url_name == 'job_map_page' %}active{% endif %}" href="{%url 'job_map_page'%}">
+              <i class="fas fa-map-marker-alt me-1"></i>Job Map
+            </a>
+          </li>
+          {% if user.is_authenticated %}
+            <li class="nav-item">
+              <a class="nav-link {% if 'profile' in request.resolver_match.url_name %}active{% endif %}" href="{%url 'profile.index' request.user.id%}">
+                <i class="fas fa-user me-1"></i>Profile
+              </a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link {% if request.resolver_match.url_name == 'recommended_jobs' %}active{% endif %}" href="{%url 'recommended_jobs'%}">
+                <i class="fas fa-star me-1"></i>Recommended
+              </a>
+            </li>
+            <li class="nav-item dropdown">
+              <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown">
+                <i class="fas fa-user-circle me-1"></i>{{user.username}}
+              </a>
+              <ul class="dropdown-menu">
+                <li><a class="dropdown-item" href="{%url 'profile.index' request.user.id%}">
+                  <i class="fas fa-user me-2"></i>My Profile
+                </a></li>
+                <li><a class="dropdown-item" href="{%url 'recommended_jobs'%}">
+                  <i class="fas fa-star me-2"></i>Recommended Jobs
+                </a></li>
+                <li><hr class="dropdown-divider"></li>
+                <li><a class="dropdown-item" href="{%url 'accounts.logout'%}">
+                  <i class="fas fa-sign-out-alt me-2"></i>Logout
+                </a></li>
+              </ul>
+            </li>
+          {% else %}
+            <li class="nav-item">
+              <a class="nav-link {% if request.resolver_match.url_name == 'accounts.login' %}active{% endif %}" href="{%url 'accounts.login'%}">
+                <i class="fas fa-sign-in-alt me-1"></i>Login
+              </a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link {% if request.resolver_match.url_name == 'accounts.signup' %}active{% endif %}" href="{%url 'accounts.signup'%}">
+                <i class="fas fa-user-plus me-1"></i>Sign Up
+              </a>
+            </li>
+          {% endif %}
+        </ul>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Page Content -->
+  {% block content %}{% endblock %}
+
+  <!-- Footer -->
+  <footer class="bg-gt-navy text-gt-white py-5 mt-5">
+    <div class="container">
+      <div class="row">
+        <div class="col-lg-4 mb-4">
+          <h5 class="mb-3">
+            <i class="fas fa-graduation-cap me-2"></i>GT CareerConnect
+          </h5>
+          <p class="mb-3">Connecting Georgia Tech students and alumni with career opportunities. Build your professional network and advance your career.</p>
+          <div class="d-flex gap-3">
+            <a href="#" class="text-gt-gold"><i class="fab fa-linkedin fa-lg"></i></a>
+            <a href="#" class="text-gt-gold"><i class="fab fa-twitter fa-lg"></i></a>
+            <a href="#" class="text-gt-gold"><i class="fab fa-facebook fa-lg"></i></a>
+          </div>
+        </div>
+        <div class="col-lg-2 col-md-6 mb-4">
+          <h6 class="mb-3">For Students</h6>
+          <ul class="list-unstyled">
+            <li><a href="{%url 'job_list'%}" class="text-light text-decoration-none">Find Jobs</a></li>
+            <li><a href="{%url 'recommended_jobs'%}" class="text-light text-decoration-none">Recommended</a></li>
+            <li><a href="#" class="text-light text-decoration-none">Career Resources</a></li>
+            <li><a href="#" class="text-light text-decoration-none">Networking Events</a></li>
+          </ul>
+        </div>
+        <div class="col-lg-2 col-md-6 mb-4">
+          <h6 class="mb-3">For Alumni</h6>
+          <ul class="list-unstyled">
+            <li><a href="#" class="text-light text-decoration-none">Mentor Students</a></li>
+            <li><a href="#" class="text-light text-decoration-none">Post Jobs</a></li>
+            <li><a href="#" class="text-light text-decoration-none">Alumni Network</a></li>
+            <li><a href="#" class="text-light text-decoration-none">Success Stories</a></li>
+          </ul>
+        </div>
+        <div class="col-lg-2 col-md-6 mb-4">
+          <h6 class="mb-3">Resources</h6>
+          <ul class="list-unstyled">
+            <li><a href="#" class="text-light text-decoration-none">Help Center</a></li>
+            <li><a href="#" class="text-light text-decoration-none">Privacy Policy</a></li>
+            <li><a href="#" class="text-light text-decoration-none">Terms of Service</a></li>
+            <li><a href="#" class="text-light text-decoration-none">Contact Us</a></li>
+          </ul>
+        </div>
+        <div class="col-lg-2 col-md-6 mb-4">
+          <h6 class="mb-3">Georgia Tech</h6>
+          <ul class="list-unstyled">
+            <li><a href="https://www.gatech.edu" class="text-light text-decoration-none" target="_blank">Official Website</a></li>
+            <li><a href="https://career.gatech.edu" class="text-light text-decoration-none" target="_blank">Career Center</a></li>
+            <li><a href="https://alumni.gatech.edu" class="text-light text-decoration-none" target="_blank">Alumni Association</a></li>
+          </ul>
+        </div>
+      </div>
+      <hr class="my-4">
+      <div class="row align-items-center">
+        <div class="col-md-6">
+          <p class="mb-0">&copy; 2024 Georgia Tech CareerConnect. All rights reserved.</p>
+        </div>
+        <div class="col-md-6 text-md-end">
+          <p class="mb-0">Made with <i class="fas fa-heart text-danger"></i> for the Georgia Tech Community</p>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Dark Mode Toggle -->
+  <div class="dark-mode-toggle" onclick="toggleDarkMode()">
+    <i class="fas fa-moon" id="darkModeIcon"></i>
+  </div>
+
+  <!-- Bootstrap JS -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  
+  <!-- Dark Mode JavaScript -->
+  <script>
+    // Check for saved theme preference or default to light mode
+    const currentTheme = localStorage.getItem('theme') || 'light';
+    document.documentElement.setAttribute('data-theme', currentTheme);
+    updateDarkModeIcon(currentTheme);
+
+    function toggleDarkMode() {
+      const currentTheme = document.documentElement.getAttribute('data-theme');
+      const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+      
+      document.documentElement.setAttribute('data-theme', newTheme);
+      localStorage.setItem('theme', newTheme);
+      updateDarkModeIcon(newTheme);
+    }
+
+    function updateDarkModeIcon(theme) {
+      const icon = document.getElementById('darkModeIcon');
+      if (theme === 'dark') {
+        icon.className = 'fas fa-sun';
+      } else {
+        icon.className = 'fas fa-moon';
+      }
+    }
+  </script>
+
+  {% block extra_js %}{% endblock %}
+</body>
+</html>
