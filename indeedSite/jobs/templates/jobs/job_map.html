@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Job Map</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+    }
+    
+    #controls {
+      background: white;
+      padding: 20px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      margin-bottom: 10px;
+    }
+    
+    #controls h2 {
+      margin-top: 0;
+      text-align: center;
+    }
+    
+    .control-group {
+      display: flex;
+      align-items: center;
+      gap: 15px;
+      margin: 15px 0;
+      flex-wrap: wrap;
+    }
+    
+    .control-group label {
+      font-weight: bold;
+      min-width: 120px;
+    }
+    
+    #radiusSlider {
+      flex: 1;
+      min-width: 200px;
+    }
+    
+    #radiusValue {
+      font-weight: bold;
+      color: #007bff;
+      min-width: 80px;
+    }
+    
+    .btn {
+      padding: 10px 20px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 14px;
+      text-decoration: none;
+      display: inline-block;
+    }
+    
+    .btn-secondary {
+      background-color: #6c757d;
+      color: white;
+      margin-left: 10px;
+    }
+    
+    .btn-secondary:hover {
+      background-color: #545b62;
+    }
+    
+    .btn-warning {
+      background-color: #ffc107;
+      color: black;
+      margin-left: 10px;
+    }
+    
+    .btn-warning:hover {
+      background-color: #e0a800;
+    }
+    
+    .btn-success {
+      background-color: #28a745;
+      color: white;
+      margin-left: 10px;
+    }
+    
+    .btn-success:hover {
+      background-color: #218838;
+    }
+    
+    .btn-success.active {
+      background-color: #1e7e34;
+      box-shadow: inset 0 3px 5px rgba(0,0,0,0.2);
+    }
+    
+    #map {
+      height: 600px;
+      width: 100%;
+      cursor: default;
+    }
+    
+    #map.pin-mode {
+      cursor: crosshair;
+    }
+    
+    .job-count {
+      text-align: center;
+      padding: 10px;
+      font-weight: bold;
+      background-color: #f8f9fa;
+    }
+    
+    .pin-location-marker {
+      background-color: #dc3545;
+      border: 3px solid white;
+      border-radius: 50% 50% 50% 0;
+      width: 20px;
+      height: 20px;
+      transform: rotate(-45deg);
+      box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+    }
+  </style>
+</head>
+<body>
+  <div id="controls">
+    <h2>Job Locations Map</h2>
+    
+    <div class="control-group">
+      <button id="pinLocationBtn" class="btn btn-success">📍 Pin a Location</button>
+      <button id="clearFilterBtn" class="btn btn-warning" style="display:none;">Clear Filter</button>
+      <a class="btn btn-secondary" href="{% url 'home.index' %}">Home</a>
+    </div>
+    
+    <div class="control-group" id="radiusControl" style="display:none;">
+      <label for="radiusSlider">Distance Filter:</label>
+      <input type="range" id="radiusSlider" min="10" max="500" value="50" step="10">
+      <span id="radiusValue">50 miles</span>
+    </div>
+  </div>
+  
+  
+  <div id="map"></div>
+
+  <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+  <script>
+    // Initialize map centered on US
+    const map = L.map('map').setView([39.8283, -98.5795], 4);
+
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '&copy; OpenStreetMap contributors'
+    }).addTo(map);
+
+    // Store user location and markers
+    let userLocation = null;
+    let userMarker = null;
+    let radiusCircle = null;
+    let jobMarkers = [];
+    let pinModeActive = false;
+
+    // UI elements
+    const pinLocationBtn = document.getElementById('pinLocationBtn');
+    const clearFilterBtn = document.getElementById('clearFilterBtn');
+    const radiusControl = document.getElementById('radiusControl');
+    const radiusSlider = document.getElementById('radiusSlider');
+    const radiusValue = document.getElementById('radiusValue');
+    const jobCount = document.getElementById('jobCount');
+
+    // Update radius value display
+    radiusSlider.addEventListener('input', (e) => {
+      radiusValue.textContent = `${e.target.value} miles`;
+      if (userLocation) {
+        loadJobs(userLocation.lat, userLocation.lng, e.target.value);
+        updateRadiusCircle(e.target.value);
+      }
+    });
+
+    // Pin location mode
+    pinLocationBtn.addEventListener('click', () => {
+      if (pinModeActive) {
+        deactivatePinMode();
+      } else {
+        activatePinMode();
+      }
+    });
+
+    function activatePinMode() {
+      pinModeActive = true;
+      pinLocationBtn.classList.add('active');
+      pinLocationBtn.textContent = '📍 Click on Map';
+      map.getContainer().classList.add('pin-mode');
+    }
+
+    function deactivatePinMode() {
+      pinModeActive = false;
+      pinLocationBtn.classList.remove('active');
+      pinLocationBtn.textContent = '📍 Pin a Location';
+      map.getContainer().classList.remove('pin-mode');
+    }
+
+    // Handle map clicks for pinning location
+    map.on('click', (e) => {
+      if (pinModeActive) {
+        setUserLocation(e.latlng.lat, e.latlng.lng);
+        deactivatePinMode();
+      }
+    });
+
+    // Set user location
+    function setUserLocation(lat, lng) {
+      userLocation = { lat, lng };
+      
+      // Show controls
+      radiusControl.style.display = 'flex';
+      clearFilterBtn.style.display = 'inline-block';
+
+      // Remove existing user marker
+      if (userMarker) {
+        map.removeLayer(userMarker);
+      }
+      
+      // Create pin marker
+      const icon = L.divIcon({
+        className: 'pin-location-marker',
+        iconSize: [20, 20],
+        iconAnchor: [10, 20]
+      });
+      
+      userMarker = L.marker([lat, lng], { icon: icon })
+        .addTo(map)
+        .bindPopup('<b>Your Location</b><br><small>Drag to move</small>')
+        .openPopup();
+
+      // Make marker draggable
+      userMarker.dragging.enable();
+      userMarker.on('dragend', (e) => {
+        const newPos = e.target.getLatLng();
+        userLocation = { lat: newPos.lat, lng: newPos.lng };
+        loadJobs(userLocation.lat, userLocation.lng, radiusSlider.value);
+        updateRadiusCircle(radiusSlider.value);
+      });
+
+      // Center map on user location
+      map.setView([lat, lng], 8);
+
+      // Add radius circle
+      updateRadiusCircle(radiusSlider.value);
+
+      // Load filtered jobs
+      loadJobs(lat, lng, radiusSlider.value);
+    }
+
+    // Clear filter button
+    clearFilterBtn.addEventListener('click', () => {
+      userLocation = null;
+      if (userMarker) {
+        map.removeLayer(userMarker);
+        userMarker = null;
+      }
+      if (radiusCircle) {
+        map.removeLayer(radiusCircle);
+        radiusCircle = null;
+      }
+      if (pinModeActive) {
+        deactivatePinMode();
+      }
+      radiusControl.style.display = 'none';
+      clearFilterBtn.style.display = 'none';
+      
+      // Reset map view
+      map.setView([39.8283, -98.5795], 4);
+      
+      // Load all jobs
+      loadJobs();
+    });
+
+    // Update radius circle on map
+    function updateRadiusCircle(radiusMiles) {
+      if (radiusCircle) {
+        map.removeLayer(radiusCircle);
+      }
+      
+      if (userLocation) {
+        // Convert miles to meters (1 mile = 1609.34 meters)
+        const radiusMeters = radiusMiles * 1609.34;
+        radiusCircle = L.circle([userLocation.lat, userLocation.lng], {
+          radius: radiusMeters,
+          color: '#007bff',
+          fillColor: '#007bff',
+          fillOpacity: 0.1,
+          weight: 2
+        }).addTo(map);
+      }
+    }
+
+    // Load jobs from server
+    function loadJobs(lat = null, lng = null, radius = null) {
+      // Clear existing job markers
+      jobMarkers.forEach(marker => map.removeLayer(marker));
+      jobMarkers = [];
+
+      // Build URL with query parameters
+      let url = "{% url 'job_map_data' %}";
+      if (lat && lng && radius) {
+        url += `?lat=${lat}&lng=${lng}&radius=${radius}`;
+      }
+
+      fetch(url)
+        .then(response => response.json())
+        .then(data => {
+          //jobCount.textContent = `Showing ${data.length} job${data.length !== 1 ? 's' : ''}`;
+          
+          data.forEach(job => {
+            if (job.latitude && job.longitude) {
+              const popupContent = `
+                <b>${job.title}</b><br>
+                ${job.company}<br>
+                ${job.location}
+                ${job.distance ? `<br><i>Distance: ${job.distance} miles</i>` : ''}
+              `;
+              
+              const marker = L.marker([job.latitude, job.longitude])
+                .addTo(map)
+                .bindPopup(popupContent);
+              
+              jobMarkers.push(marker);
+            }
+          });
+        })
+        .catch(error => {
+          console.error('Error loading jobs:', error);
+          jobCount.textContent = 'Error loading jobs';
+        });
+    }
+
+    // Initial load of all jobs
+    loadJobs();
+  </script>
+</body>
+</html>
