@@ -6,6 +6,7 @@ from .forms import ProfileForm, JobForm
 from django.http import JsonResponse
 from django.db.models import Q
 import requests
+import math
 
 def index(request):
     jobs = Job.objects.all()
@@ -203,10 +204,81 @@ def job_map_page(request):
     """Renders the HTML page containing the map."""
     return render(request, "jobs/job_map.html")
 
+
+def calculate_distance(lat1, lon1, lat2, lon2):
+    """
+    Calculate the distance between two points on Earth using the Haversine formula.
+    Returns distance in miles.
+    """
+    # Radius of Earth in miles
+    R = 3959
+    
+    # Convert latitude and longitude from degrees to radians
+    lat1_rad = math.radians(lat1)
+    lat2_rad = math.radians(lat2)
+    delta_lat = math.radians(lat2 - lat1)
+    delta_lon = math.radians(lon2 - lon1)
+    
+    # Haversine formula
+    a = math.sin(delta_lat / 2) ** 2 + math.cos(lat1_rad) * math.cos(lat2_rad) * math.sin(delta_lon / 2) ** 2
+    c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
+    distance = R * c
+    
+    return distance
+
+
 def job_map_data(request):
-    """Returns JSON data for all jobs with lat/lng."""
-    jobs = Job.objects.values("id", "title", "company", "location", "latitude", "longitude")
-    return JsonResponse(list(jobs), safe=False)
+    """
+    Returns JSON data for jobs with lat/lng.
+    Optionally filters by distance from user's location.
+    
+    Query parameters:
+    - lat: user's latitude
+    - lng: user's longitude
+    - radius: maximum distance in miles (default: no filter)
+    """
+    # Get query parameters
+    user_lat = request.GET.get('lat')
+    user_lng = request.GET.get('lng')
+    radius = request.GET.get('radius')
+    
+    # Start with all jobs that have coordinates
+    jobs = Job.objects.filter(latitude__isnull=False, longitude__isnull=False)
+    
+    # Convert to list of dictionaries
+    jobs_data = []
+    
+    for job in jobs:
+        job_dict = {
+            "id": job.id,
+            "title": job.title,
+            "company": job.company,
+            "location": job.location,
+            "latitude": job.latitude,
+            "longitude": job.longitude,
+        }
+        
+        # If user location and radius are provided, calculate distance
+        if user_lat and user_lng and radius:
+            try:
+                user_lat = float(user_lat)
+                user_lng = float(user_lng)
+                radius = float(radius)
+                
+                distance = calculate_distance(user_lat, user_lng, job.latitude, job.longitude)
+                job_dict["distance"] = round(distance, 2)
+                
+                # Only include jobs within the specified radius
+                if distance <= radius:
+                    jobs_data.append(job_dict)
+            except (ValueError, TypeError):
+                # If conversion fails, include all jobs
+                jobs_data.append(job_dict)
+        else:
+            # No filtering, include all jobs
+            jobs_data.append(job_dict)
+    
+    return JsonResponse(jobs_data, safe=False)
 
 ##################################################
 # RECRUITER VIEWS
@@ -252,7 +324,3 @@ def create_job(request):
 
 def user_list(request):
     profiles = Profile.objects.all()
-
-    
-
-
